@@ -19,12 +19,15 @@ import sys
 from common.arch_strings import *
 from common.auto_scanner import AutoScanner
 from common.issue_type_config import IssueTypeConfig
-from common.main import check, init_main
+from common.main import check, init_main, clone_git_repo
 from common.progress import create_progress_for_scanner
+from common.issue import BaseReportItem
+from common.report import Report
+
 from . import __project__, __summary__, __target__, __version__
 from .arm64_scanners import Arm64Scanners
 from .issue_types import ISSUE_TYPES
-
+from .report_item import DOCKERFILE_REPORT_TYPES
 
 def main():
     parser = init_main(__project__, __summary__, __version__, ISSUE_TYPES)
@@ -32,6 +35,9 @@ def main():
     args = parser.parse_args()
 
     report_factory = check(args)
+    
+    Report.REPORT_ITEM = BaseReportItem
+    Report.REPORT_ITEM.TYPES += DOCKERFILE_REPORT_TYPES
 
     report = report_factory.createReport(args.root,
                                          arch=args.arch,
@@ -47,6 +53,15 @@ def main():
                                          progress=args.progress)
 
     issue_type_config_instance = IssueTypeConfig(args.issue_types, ISSUE_TYPES)
+
+    # Check if a git repo is specified
+    if args.git_repo:
+        # Clone it with given repo, branch or commit
+        try:
+            clone_git_repo(args.git_repo, args.branch, args.commit, args.root)
+        except Exception as e:
+            print(f"Error occurred while cloning [{args.git_repo}] : {e}")
+            sys.exit(1)
 
     if args.arch in AARCH64_ARCHS:
         scanners = Arm64Scanners(issue_type_config_instance,

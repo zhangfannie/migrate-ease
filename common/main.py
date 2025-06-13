@@ -18,6 +18,7 @@ import argparse
 import os
 import sys
 import textwrap
+import git
 
 from common.arch_strings import *
 from common.issue_type_config import IssueTypeConfig
@@ -28,7 +29,7 @@ from common.report_factory import ReportFactory, ReportOutputFormat
 
 def init_main(project, summary, version, ISSUE_TYPES):
     epilog = _('Target ISA Type:') + '\n' + \
-             textwrap.fill(_('%s' % (','.join(AARCH64_ARCHS))),
+             textwrap.fill(('%s' % (','.join(AARCH64_ARCHS))),
                            initial_indent='  ',
                            subsequent_indent='  ') + '\n\n' + \
              _('Use:') + '\n' + \
@@ -64,7 +65,7 @@ def init_main(project, summary, version, ISSUE_TYPES):
                         default=None)
 
     parser.add_argument('--branch',
-                        help=_('git repository branch (default: master).'),
+                        help=_('git repository branch.'),
                         default=None)
 
     parser.add_argument('--commit',
@@ -72,7 +73,7 @@ def init_main(project, summary, version, ISSUE_TYPES):
                         default=None)
 
     parser.add_argument('--arch',
-                        help=_('target instruction set architecture (default: %s).' % DEFAULT_ARCH),
+                        help=_('target instruction set architecture (default: %s).') % DEFAULT_ARCH,
                         default=DEFAULT_ARCH)
 
     parser.add_argument('--march',
@@ -81,7 +82,7 @@ def init_main(project, summary, version, ISSUE_TYPES):
 
     parser.add_argument('--target-os',
                         help=_(
-                            'target operating system (default: %s), supported OS (%s).' % (DEFAULT_OS, SUPPORTED_OS)),
+                            'target operating system (default: %s), supported OS (%s).') % (DEFAULT_OS, SUPPORTED_OS),
                         metavar='OS',
                         default=DEFAULT_OS)
 
@@ -124,19 +125,21 @@ def check(args):
         sys.exit(1)
 
     if args.target_os not in SUPPORTED_OS:
-        print(_('OS "%s" is not supported.\nSupported OS: %s' % (args.target_os, SUPPORTED_OS)),
+        print(_('OS "%s" is not supported.\nSupported OS: %s') % (args.target_os, SUPPORTED_OS),
               file=sys.stderr)
         sys.exit(1)
 
-    if not os.path.exists(args.root):
-        print(_('%s: directory not found.') % args.root,
-              file=sys.stderr)
-        sys.exit(1)
+    if not args.git_repo:
+        # For git repo scan, the root directory will be created by clone_git_repo
+        if not os.path.exists(args.root):
+            print(_('%s: directory not found.') % args.root,
+                  file=sys.stderr)
+            sys.exit(1)
 
-    if not os.path.isdir(args.root):
-        print(_('%s: not a directory.') % args.root,
-              file=sys.stderr)
-        sys.exit(1)
+        if not os.path.isdir(args.root):
+            print(_('%s: not a directory.') % args.root,
+                  file=sys.stderr)
+            sys.exit(1)
 
     try:
         report_factory = ReportFactory()
@@ -156,3 +159,23 @@ def check(args):
     except ValueError:
         print(_('%s: invalid output format') % args.output_format, file=sys.stderr)
         sys.exit(1)
+
+def clone_git_repo(url, branch, commit, dest):
+    if os.path.exists(dest):
+        if len(os.listdir(dest)) != 0:
+            print(f"destination path '{dest}' already exists and is not an empty directory. Skip clone")
+            return
+
+    # Clone the repository
+    os.makedirs(dest, exist_ok=True)
+    try:
+        repo = git.Repo.clone_from(url, dest, branch=branch)
+        if branch:
+            print(f"Successfully cloned {branch} from {url} to {dest}.")
+        else:
+            print(f"Successfully cloned {url} to {dest}.")
+
+        if commit:
+            repo.git.checkout(commit)
+    except Exception as e:
+        raise Exception(f"{e}")

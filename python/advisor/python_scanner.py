@@ -14,10 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
+import locale
+import time
+
 from common.json_report import JsonReport
 from common.report import Report
 from common.scanner import BaseScanner
-
+from common.checkpoint import load_checkpoints
 
 class PythonScanner(BaseScanner):
     PY = 'py'
@@ -25,17 +29,29 @@ class PythonScanner(BaseScanner):
 
     FILE_SUMMARY = {
         PY: {
-            "fileName": "Python 文件",
+            "fileName": "Python",
             "loc": 0,
             "count": 0
         },
         PYTHONLIBS: {
-            "fileName": "Lib 文件",
+            "fileName": "Lib",
             "loc": 0,
             "count": 0
         }
     }
 
+    checkpoints_content = {}
+
+    def load_checkpoints(self):
+        env_language = locale.getdefaultlocale()[0]
+        language = 'zh_CN' if env_language.startswith('zh_') else 'en_US'
+        current_path = os.path.abspath(os.path.dirname(__file__))
+        check_points_yml = os.path.abspath(current_path + './../db/' + language + '/check_points.yaml')
+
+        start_time = time.time()
+        self.checkpoints_content = load_checkpoints(check_points_yml)
+        end_time = time.time()
+        print('[Python] Loading of check_points.yaml took %f seconds.' % (end_time - start_time))
 
 Report.SCANNER = PythonScanner
 JsonReport.lang = 'python'

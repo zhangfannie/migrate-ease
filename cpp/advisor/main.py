@@ -21,36 +21,41 @@ from common.arch_strings import *
 from common.auto_scanner import AutoScanner
 from common.issue_type_config import IssueTypeConfig
 from common.localization import _
-from common.main import check, init_main
+from common.main import check, init_main, clone_git_repo
 from common.progress import create_progress_for_scanner
+from common.issue import BaseReportItem
+from common.report import Report
+
 from . import __project__, __summary__, __target__, __version__
 from .arm64_scanners import Arm64Scanners
 from .issue_types import ISSUE_TYPES
-
+from .report_item import CPP_REPORT_TYPES
 
 def main():
     parser = init_main(__project__, __summary__, __version__, ISSUE_TYPES)
 
     parser.add_argument('--target-compiler',
                         help=_(
-                            'target compiler(default: %s), supported OS (%s).'
-                            % (DEFAULT_COMPILER, SUPPORTED_COMPILERS_ARM)),
+                            'target compiler(default: %s), supported OS (%s).') % (DEFAULT_COMPILER, SUPPORTED_COMPILERS_ARM),
                         metavar='COMPILER',
                         default=DEFAULT_COMPILER)
 
     parser.add_argument('--warning-level',
                         help=_(
-                            'warning level (default: %s), supported level (%s).'
+                            'warning level (default: L1), supported level ([L1, L2]).'
                             'indicate the certainty when report a warning,'
                             'L1 ---- only report a warning with great certainty,'
                             'L2 ---- report a warning with less certainty'
-                            % ('L1', ['L1', 'L2'])),
+                            ),
                         metavar='LEVEL',
                         default='L1')
 
     args = parser.parse_args()
 
     report_factory = check(args)
+
+    Report.REPORT_ITEM = BaseReportItem
+    Report.REPORT_ITEM.TYPES += CPP_REPORT_TYPES
 
     report = report_factory.createReport(args.root,
                                          arch=args.arch,
@@ -71,14 +76,24 @@ def main():
             if args.target_compiler not in SUPPORTED_COMPILERS_ARM:
                 raise ValueError
         except ValueError:
-            print(_('%s: invalid compiler for N2') % args.target_compiler, file=sys.stderr)
+            print(_('%s: invalid compiler for %s') % args.arch, args.target_compiler, file=sys.stderr)
             sys.exit(1)
         try:
             if args.warning_level not in ['L1', 'L2']:
                 raise ValueError
         except ValueError:
-            print(_('%s: invalid warning_level for N2') % args.warning_level, file=sys.stderr)
+            print(_('%s: invalid warning_level for %s') % args.arch, args.warning_level, file=sys.stderr)
             sys.exit(1)
+
+    # Check if a git repo is specified
+    if args.git_repo:
+        # Clone it with given repo, branch or commit
+        try:
+            clone_git_repo(args.git_repo, args.branch, args.commit, args.root)
+        except Exception as e:
+            print(f"Error occurred while cloning [{args.git_repo}] : {e}")
+            sys.exit(1)
+
     if args.arch in AARCH64_ARCHS:
         scanners = Arm64Scanners(issue_type_config_instance,
                                  output_format=args.output_format,

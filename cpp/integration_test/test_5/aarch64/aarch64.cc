@@ -1,49 +1,49 @@
 //aarch_64 inline assembly
-#if defined(aarch64)
+#if defined(__aarch64__)
 #define barrier() __sync_synchronize()
-__asm__ __volatile__("dmb ish" : : : "memory"); 
+__asm__ __volatile__("dmb ish" : : : "memory");
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("dmb ishst" : : : "memory");
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("dmb ishld" : : : "memory");
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("crc32cb %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value));
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("crc32ch %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value));
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("crc32cw %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value));
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("crc32cx %w[c], %w[c], %x[v]":[c]"+r"(crc):[v]"r"(value));
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("rev %w[dst], %w[src]" : [dst]"=r"(val) : [src]"r"(val));
 #endif
 
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 #define __nops(n) ".rept " #n "\nnop\n.endr\n"
 #define nops(n) asm volatile(__nops(n))
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("yield" : : : "memory");//there esist an error
 __asm__ __volatile__("yield");
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __asm__ __volatile__("mrs %0, cntvct_el0" : "=r" (count_num));
 static uint64_t Rdtsc()
     {
@@ -59,7 +59,7 @@ static uint64_t Rdtsc()
     }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 #include <arm_neon.h>
 static inline int POPCNT_popcnt_u64(uint64_t x)
     {
@@ -80,41 +80,41 @@ static inline int POPCNT_popcnt_u64(uint64_t x)
 }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __sync_add_and_fetch(&_value.counter,1)
 void atomic_add(int i)
 {
     unsigned int tmp;
     int result;
     __asm__ volatile(" prfm pstl1strm, %2\n"
-        "1: ldaxr %w0, %2\n"    //加载数据到寄存器
-        " add %w0, %w0, %w3\n"  //加操作
-        " stlxr %w1, %w0, %2\n" //加后的数据写入内存并判断是否写入成功
-        " cbnz %w1, 1b"         //若写入内存失败, 重新执行加操作
+        "1: ldaxr %w0, %2\n"
+        " add %w0, %w0, %w3\n"
+        " stlxr %w1, %w0, %2\n"
+        " cbnz %w1, 1b"
         : "=&r"(result), "=&r"(tmp), "+Q"(_value.counter)
         : "Ir"(i)
     )
 }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __sync_sub_and_fetch(&_value.counter,1);
 void atomic_sub (int i)
 {
     unsigned int tmp;
     int result;
     __asm__ volatile(" prfm pstl1strm, %2\n"
-        "1: ldaxr %w0, %2\n"    //加载数据到寄存器
-        " sub %w0, %w0, %w3\n"  //减操作
-        " stlxr %w1, %w0, %2\n" //减后的数据写入内存, 并判断是否写入成功
-        " cbnz %w1, 1b"         //若写入内存失败, 重新执行减操作
+        "1: ldaxr %w0, %2\n"
+        " sub %w0, %w0, %w3\n"
+        " stlxr %w1, %w0, %2\n"
+        " cbnz %w1, 1b"
         : "=&r"(result), "=&r"(tmp), "+Q"(_value.counter)
         : "Ir"(i)
     )
 }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __sync_sub_and_fetch(&_value.counter, i)
 static inline int atomic_sub_return(int i, atomic_t *v)
 {
@@ -135,16 +135,15 @@ static inline int atomic_sub_return(int i, atomic_t *v)
 }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 __sync_add_and_fetch(&_value.counter, i)
 {
     unsigned long tmp;
-    int result, val;//写预取
+    int result, val;
     prefetchw(&v->counter);
     __asm__ volatile("\n\t"
         "@ atomic_fetch\n\t"
         "1: ldrex %0, [%4]\n\t" @result, tmp
-        //执行v->counter+i（5%）操作, 并将执行结果放入val（%1）所在的寄存器中
         " add %1, %0, %5\n\t" @result,
         " strex %2, %1, [%4]\n\t" @tmp, result, tmp
         " teq %2, #0\n\t" @tmp
@@ -156,14 +155,14 @@ __sync_add_and_fetch(&_value.counter, i)
 }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 static __inline__ long atomic64_add_and_return(long i, atomic64_t *v)
 {
     return __sync_add_and_fetch(&((v)->counter), i); //expect: CPPStdCodes
 }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 #include <arm_neon.h>
 typedef union __attribute__((aligned(16))) __oword
 {
@@ -179,7 +178,7 @@ static inline uint16_t SSE4_cmpestrm(int32x4_t str1, int len1, int32x4_t str2, i
     uint16_t result = 0;
     uint16_t i = 0;
     uint16_t j = 0;
-    // Impala中用到的模式 STRCHR_MODE = PCMPSTR_EQUAL_ANY | PCMPSTR_UBYTE_OPS
+    // In Impala, STRCHR_MODE = PCMPSTR_EQUAL_ANY | PCMPSTR_UBYTE_OPS
     for (i = 0; i < len2; i++) {
         for ( j = 0; j < len1; j++) {
             if (a.m128i_u8[j] == b.m128i_u8[i]) {
@@ -191,7 +190,7 @@ static inline uint16_t SSE4_cmpestrm(int32x4_t str1, int len1, int32x4_t str2, i
 }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 #include <arm_neon.h>
 template<int MODE>
 static inline int SSE4_cmpestri(int32x4_t str1, int len1, int32x4_t str2, int len2)
@@ -209,7 +208,7 @@ static inline int SSE4_cmpestri(int32x4_t str1, int len1, int32x4_t str2, int le
     }
     int result;
     int i;
-    // 本例替换的模式STRCMP_MODE = PCMPSTR_EQUAL_EACH | PCMPSTR_UBYTE_OPS | PCMPSTR_NEG_POLARITY
+    // STRCMP_MODE = PCMPSTR_EQUAL_EACH | PCMPSTR_UBYTE_OPS | PCMPSTR_NEG_POLARITY
     for(i = 0; i < len_s; i++)
     {
         if (a.m128i_u8[i] == b.m128i_u8[i])
@@ -223,19 +222,19 @@ static inline int SSE4_cmpestri(int32x4_t str1, int len1, int32x4_t str2, int le
 }
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 LDP Xt1, Xt2, addr
 STP Xt1, Xt2, addr
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 AND Vd.<T>, Vn.<T>, Vm.<T>
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 EOR Vd.<T>, Vn.<T>, Vm.<T>
 #endif
 
-#if defined(aarch64)
+#if defined(__aarch64__)
 TBL Vd.<T>, {Vn*.16B}, Vm.<T>2
 #endif
