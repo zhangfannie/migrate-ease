@@ -1,0 +1,39 @@
+name: Migrate-ease CI
+
+on:
+  push:
+    branches:
+      - cicd
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip3 install -r requirements.txt
+
+      - name: Run all integration tests under all modules
+        run: |
+          source .venv/bin/activate
+          echo "Running integration tests under all modules ...."
+          for m in cpp docker go python rust; do
+            echo "Running integration tests under $m module ...."
+            cd $GITHUB_WORKSPACE/$m/integration_test
+            ./test
+          done
